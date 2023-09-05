@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/stretchr/testify/assert"
-	"testing"
+	tst "testing"
 )
 
-func TestRunMain(t *testing.T) {
+func TestRunMain(t *tst.T) {
 	main()
 	assert.True(t, true, "This is good. Canary test.")
 }
