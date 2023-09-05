@@ -1,6 +1,7 @@
 name: Print all environment variables
 on:
   push:
+  pull_request_target:
   workflow_dispatch:
 jobs:
   build:
