@@ -1,0 +1,11 @@
+name: Print all environment variables
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+      - name: Print all environment variables
+        run: env
