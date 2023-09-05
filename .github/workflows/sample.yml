@@ -19,6 +19,9 @@ jobs:
             echo "the root directory of the current Git repository:"
             git rev-parse --show-toplevel
             echo "--------------"
+            echo "all symbolic references:"
+            git for-each-ref --format="%(refname)" refs/
+            echo "--------------"
             echo "symbolic reference for the default branch:"
             git symbolic-ref refs/remotes/origin/HEAD
             echo "--------------"
