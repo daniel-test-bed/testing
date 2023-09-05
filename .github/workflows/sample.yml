@@ -23,7 +23,7 @@ jobs:
             git for-each-ref --format="%(refname)" refs/
             echo "--------------"
             echo "symbolic reference for the default branch:"
-            git symbolic-ref refs/remotes/origin/HEAD
+            git remote show origin | grep "HEAD branch" | awk '{print $NF}'
             echo "--------------"
             echo "retrieves the URL of the remote repository:"
             git remote get-url origin
