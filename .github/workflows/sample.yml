@@ -28,3 +28,4 @@ jobs:
             echo "retrieves the URL of the remote repository:"
             git remote get-url origin
             echo "--------------"
+        if: success() # Ensure this step runs only if the checkout was successful
