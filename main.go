@@ -61,40 +61,35 @@ func GetDefaultRepoAndBranch(repoPath string) (string, string, error) {
 
 // GetBaseRepoAndBranch returns the base repo and branch for the given repo and branch.
 func GetBaseRepoAndBranch(repoURL string, branch string) (string, string, error) {
-	if repoURL == "" || branch == "" {
-		defaultRepo, defaultBranch, err := GetDefaultRepoAndBranch(".")
+
+	// Determine the URL of the upstream remote (usually "origin")
+	cmd := exec.Command("git", "remote", "get-url", "upstream")
+	output, err := cmd.Output()
+	if err != nil {
+		// If there's no "upstream" remote, fall back to "origin"
+		cmd := exec.Command("git", "remote", "get-url", "origin")
+		output, err = cmd.Output()
 		if err != nil {
 			return "", "", err
 		}
-
-		repoURL = defaultRepo
-		branch = defaultBranch
+	}
+	// Check if repoURL and branch are empty; if so, use default values
+	if repoURL == "" {
+		repoURL = strings.TrimSpace(string(output))
 	}
 
-	// Extract the GitHub repository owner and name from the URL
-	parts := strings.Split(repoURL, "/")
-	owner := parts[len(parts)-2]
-	repoName := strings.TrimSuffix(parts[len(parts)-1], ".git")
-
-	// Query the GitHub API to get the default branch
-	cmd := exec.Command("curl", "-s", fmt.Sprintf("https://api.github.com/repos/%s/%s", owner, repoName))
-	output, err := cmd.Output()
+	// Determine the branch name of the upstream remote (usually "origin")
+	cmd = exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	output, err = cmd.Output()
 	if err != nil {
 		return "", "", err
 	}
 
-	// Parse the JSON response to extract the default branch name
-	defaultBranch := ""
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if strings.Contains(line, `"default_branch"`) {
-			parts := strings.Split(line, ":")
-			defaultBranch = strings.TrimSpace(strings.Trim(parts[1], `",`))
-			break
-		}
+	if branch == "" {
+		branch = strings.TrimPrefix(string(output), "origin/")
 	}
 
-	return repoURL, defaultBranch, nil
+	return repoURL, branch, nil
 }
 
 //// GetBaseRepoAndBranch returns the base repo and branch for the current repo.
