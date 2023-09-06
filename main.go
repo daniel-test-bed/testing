@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/terraform-ibm-modules/ibmcloud-terratest-wrapper/common"
 	"log"
+	"strings"
 )
 
 func main() {
@@ -16,14 +16,24 @@ func main() {
 		fmt.Println(err)
 	}
 
+	fmt.Println("Wrapper Default Repo and Branch: ")
+	defaultRepo, defaultBranch, err := common.GetDefaultRepoAndBranch(path)
+	fmt.Println(defaultRepo, defaultBranch)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println("Wrapper Base Repo and Branch: ")
+	baseRepo, baseBranch := common.GetBaseRepoAndBranch("", "")
+	fmt.Println(baseRepo, baseBranch)
+
 	fmt.Println("Default Repo and Branch: ")
-	defaultRepo, defaultBranch, err := GetDefaultRepoAndBranch(path)
+	defaultRepo, defaultBranch, err = GetDefaultRepoAndBranch(path)
 	fmt.Println(defaultRepo, defaultBranch)
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println("Base Repo and Branch: ")
-	baseRepo, baseBranch, err := GetBaseRepoAndBranch("", "")
+	baseRepo, baseBranch, err = GetBaseRepoAndBranch("", "")
 	fmt.Println(baseRepo, baseBranch)
 	if err != nil {
 		fmt.Println(err)
@@ -87,12 +97,13 @@ func getOriginBranch() string {
 		log.Fatal(err)
 	}
 
-	ref, err := repo.Head()
+	// Open the reference to origin/HEAD
+	ref, err := repo.Reference("refs/remotes/origin/HEAD", true)
 	if err != nil {
-		log.Fatal(err)
+		return ""
 	}
 
 	// Extract the branch name from the full reference name
-	branchName := plumbing.ReferenceName(ref.Name()).Short()
+	branchName := strings.TrimPrefix(ref.Name().Short(), "origin/")
 	return branchName
 }

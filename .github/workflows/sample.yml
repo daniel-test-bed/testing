@@ -9,8 +9,6 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
-        with:
-            fetch-depth: 1
       - name: Print all environment variables
         run: env
       - name: Git commands
