@@ -49,6 +49,7 @@ func GetCurrentPRRepoAndBranch() (string, string, error) {
 	}
 
 	cmd = exec.Command("git", "symbolic-ref", "--short", "HEAD")
+	//cmd = exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 	branch, err := cmd.Output()
 	if err != nil {
 		return "", "", err
@@ -68,7 +69,9 @@ func GetBaseRepoAndBranch(repo string, branch string) (string, string, error) {
 	if repo == "" {
 		cmd := exec.Command("git", "remote", "get-url", "upstream")
 		output, err := cmd.Output()
-		if err != nil {
+		if err == nil { // Check if the first command is successful
+			repo = strings.TrimSpace(string(output))
+		} else {
 			// If there's no "upstream" remote, fall back to "origin"
 			cmd := exec.Command("git", "remote", "get-url", "origin")
 			output, err = cmd.Output()
@@ -78,24 +81,50 @@ func GetBaseRepoAndBranch(repo string, branch string) (string, string, error) {
 			repo = strings.TrimSpace(string(output))
 		}
 	}
-
-	// Determine the branch name of the upstream remote (usually "origin/HEAD")
+	// Determine the branch name from either the "origin" or "upstream" remote (usually "origin/HEAD")
 	if branch == "" {
+		// Try to get the branch from the "origin" remote
 		cmd := exec.Command("git", "remote", "show", "origin")
 		output, err := cmd.Output()
-		if err != nil {
-			return "", "", err
-		}
-
-		lines := strings.Split(string(output), "\n")
-		for _, line := range lines {
-			if strings.Contains(line, "HEAD branch:") {
-				parts := strings.SplitN(line, ":", 2)
-				if len(parts) == 2 {
-					branch = strings.TrimSpace(parts[1])
-					break
+		if err == nil { // Check if the first command is successful
+			lines := strings.Split(string(output), "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "HEAD branch:") {
+					parts := strings.SplitN(line, ":", 2)
+					if len(parts) == 2 {
+						branch = strings.TrimSpace(parts[1])
+						break
+					}
 				}
 			}
+		}
+
+		// If branch is still empty, try to get it from the "upstream" remote
+		if branch == "" {
+			cmd := exec.Command("git", "remote", "show", "upstream")
+			output, err := cmd.Output()
+			if err == nil {
+				lines := strings.Split(string(output), "\n")
+				for _, line := range lines {
+					if strings.Contains(line, "HEAD branch:") {
+						parts := strings.SplitN(line, ":", 2)
+						if len(parts) == 2 {
+							branch = strings.TrimSpace(parts[1])
+							break
+						}
+					}
+				}
+			}
+		}
+
+		// If branch is still empty, use an alternative method to get the current branch
+		if branch == "" {
+			cmd := exec.Command("git", "symbolic-ref", "--short", "HEAD")
+			output, err := cmd.Output()
+			if err != nil {
+				return "", "", err
+			}
+			branch = strings.TrimSpace(string(output))
 		}
 	}
 
