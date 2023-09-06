@@ -15,8 +15,8 @@ func main() {
 		fmt.Println(err)
 	}
 
-	fmt.Println("Wrapper Default Repo and Branch: ")
-	defaultRepo, defaultBranch, err := common.GetDefaultRepoAndBranch(path)
+	fmt.Println("Wrapper PR Repo and Branch: ")
+	defaultRepo, defaultBranch, err := common.GetCurrentPrRepoAndBranch()
 	fmt.Println(defaultRepo, defaultBranch)
 	if err != nil {
 		fmt.Println(err)
@@ -25,8 +25,8 @@ func main() {
 	baseRepo, baseBranch := common.GetBaseRepoAndBranch("", "")
 	fmt.Println(baseRepo, baseBranch)
 
-	fmt.Println("Default Repo and Branch: ")
-	defaultRepo, defaultBranch, err = GetDefaultRepoAndBranch(path)
+	fmt.Println("PR Repo and Branch: ")
+	defaultRepo, defaultBranch, err = GetCurrentPRRepoAndBranch()
 	fmt.Println(defaultRepo, defaultBranch)
 	if err != nil {
 		fmt.Println(err)
@@ -41,16 +41,14 @@ func main() {
 }
 
 // GetDefaultRepoAndBranch returns the default repo and branch for the given repo path.
-func GetDefaultRepoAndBranch(repoPath string) (string, string, error) {
+func GetCurrentPRRepoAndBranch() (string, string, error) {
 	cmd := exec.Command("git", "remote", "get-url", "origin")
-	cmd.Dir = repoPath
 	repoURL, err := cmd.Output()
 	if err != nil {
 		return "", "", err
 	}
 
 	cmd = exec.Command("git", "symbolic-ref", "--short", "HEAD")
-	cmd.Dir = repoPath
 	branch, err := cmd.Output()
 	if err != nil {
 		return "", "", err
@@ -60,36 +58,49 @@ func GetDefaultRepoAndBranch(repoPath string) (string, string, error) {
 }
 
 // GetBaseRepoAndBranch returns the base repo and branch for the given repo and branch.
-func GetBaseRepoAndBranch(repoURL string, branch string) (string, string, error) {
+func GetBaseRepoAndBranch(repo string, branch string) (string, string, error) {
+	// If both repo and branch are provided, return them directly
+	if repo != "" && branch != "" {
+		return repo, branch, nil
+	}
 
 	// Determine the URL of the upstream remote (usually "origin")
-	cmd := exec.Command("git", "remote", "get-url", "upstream")
-	output, err := cmd.Output()
-	if err != nil {
-		// If there's no "upstream" remote, fall back to "origin"
-		cmd := exec.Command("git", "remote", "get-url", "origin")
-		output, err = cmd.Output()
+	if repo == "" {
+		cmd := exec.Command("git", "remote", "get-url", "upstream")
+		output, err := cmd.Output()
+		if err != nil {
+			// If there's no "upstream" remote, fall back to "origin"
+			cmd := exec.Command("git", "remote", "get-url", "origin")
+			output, err = cmd.Output()
+			if err != nil {
+				return "", "", err
+			}
+			repo = strings.TrimSpace(string(output))
+		}
+	}
+
+	// Determine the branch name of the upstream remote (usually "origin/HEAD")
+	if branch == "" {
+		cmd := exec.Command("git", "remote", "show", "origin")
+		output, err := cmd.Output()
 		if err != nil {
 			return "", "", err
 		}
-	}
-	// Check if repoURL and branch are empty; if so, use default values
-	if repoURL == "" {
-		repoURL = strings.TrimSpace(string(output))
+
+		lines := strings.Split(string(output), "\n")
+		for _, line := range lines {
+			if strings.Contains(line, "HEAD branch:") {
+				parts := strings.SplitN(line, ":", 2)
+				if len(parts) == 2 {
+					branch = strings.TrimSpace(parts[1])
+					break
+				}
+			}
+		}
 	}
 
-	// Determine the branch name of the upstream remote (usually "origin")
-	cmd = exec.Command("git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
-	output, err = cmd.Output()
-	if err != nil {
-		return "", "", err
-	}
-
-	if branch == "" {
-		branch = strings.TrimPrefix(string(output), "origin/")
-	}
-
-	return repoURL, branch, nil
+	// If branch information is not found, leave it as an empty string
+	return repo, branch, nil
 }
 
 //// GetBaseRepoAndBranch returns the base repo and branch for the current repo.
