@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/go-git/go-git/v5 v5.8.1
-	github.com/terraform-ibm-modules/ibmcloud-terratest-wrapper v1.12.1
+	github.com/terraform-ibm-modules/ibmcloud-terratest-wrapper v1.12.2
 )
 
 require (
