@@ -5,8 +5,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-#    container:
-#      image: icr.io/goldeneye_images/goldeneye-ci-image:stable
+    container:
+      image: icr.io/goldeneye_images/goldeneye-ci-image:stable
     steps:
       - name: Check out repo
         uses: actions/checkout@v3
